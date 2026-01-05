@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEAP +Alpha Verb 2 (2043-2084)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&family=Tinos:wght@700&display=swap');
+
+        body {
+            background-color: #007BFF;
+            /* ビビットなブルー */
+            font-family: 'Noto Sans JP', sans-serif;
+        }
+
+        /* 英語フォントをTimes New Romanに設定 */
+        .font-english {
+            font-family: 'Tinos', 'Times New Roman', serif;
+            font-weight: 700;
+            font-size: 1.25rem;
+            /* 20px */
+            line-height: 1.75rem;
+            /* 28px */
+        }
+
+        .answer-span {
+            color: #DC2626;
+            /* 赤色 */
+            font-weight: 700;
+            display: none;
+        }
+
+        .underline-span {
+            text-decoration: underline;
+            text-underline-offset: 4px;
+            display: inline;
+        }
+
+        .show-answer .answer-span {
+            display: inline;
+        }
+
+        .show-answer .underline-span {
+            display: none;
+        }
+
+        .explanation {
+            display: none;
+            white-space: pre-wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+
+        .btn-primary {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+
+        /* モバイルでのボタン調整 */
+        @media (max-width: 640px) {
+            #control-panel {
+                padding: 0.5rem;
+            }
+
+            #control-panel button {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body class="text-gray-800">
+
+    <div id="app-container" class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-8 bg-blue-500 p-4 rounded-xl shadow-lg">
+            <h1 class="text-2xl md:text-3xl font-bold text-white">LEAP +Alpha</h1>
+            <h2 id="app-subtitle" class="text-xl md:text-2xl font-bold text-white">+Alpha Verb 2: No.2043-2084</h2>
+        </header>
+
+        <main class="bg-white/90 backdrop-blur-sm p-6 rounded-xl shadow-lg mb-28">
+            <div class="flex justify-end mb-6">
+                <button id="start-quiz-btn"
+                    class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-transform transform hover:scale-105">
+                    ランダムテスト
+                </button>
+            </div>
+
+            <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h3 class="font-bold text-lg mb-2">選択した問題でPDFを作成</h3>
+                <p class="text-gray-600 mb-4">学習したい問題のチェックボックスを選択してから、下のボタンを押してください。</p>
+                <div class="flex items-center mb-4">
+                    <input type="checkbox" id="select-all-checkbox"
+                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                    <label for="select-all-checkbox" class="ml-2 block text-sm text-gray-900">すべて選択 / 解除</label>
+                </div>
+                <div class="flex justify-center">
+                    <button id="open-pdf-modal-btn"
+                        class="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow transition-transform transform hover:scale-105">PDFダウンロードの種類を選択</button>
+                </div>
+            </div>
+
+
+            <div id="sentence-list" class="space-y-6">
+                <!-- Sentences will be populated by JS -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Control Panel -->
+    <div id="control-panel"
+        class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md p-4 border-t-2 border-gray-200 shadow-2xl flex justify-center items-center space-x-2 md:space-x-4">
+        <button id="toggle-answer-btn"
+            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">表示/非表示</button>
+        <button id="play-sound-btn"
+            class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">音声再生</button>
+        <button id="record-btn"
+            class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">録音評価</button>
+        <button id="toggle-explanation-btn"
+            class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">語の意味</button>
+    </div>
+
+    <!-- Message/Score Modal -->
+    <div id="message-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div id="message-content" class="bg-white p-8 rounded-lg shadow-xl text-center">
+            <!-- Message content will be populated by JS -->
+        </div>
+    </div>
+    <!-- Quiz Modal -->
+    <div id="quiz-modal" class="hidden fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-40 p-4">
+        <div class="bg-white w-full max-w-2xl p-8 rounded-2xl shadow-2xl relative">
+            <button id="close-quiz-btn"
+                class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl font-bold">&times;</button>
+            <div id="quiz-content">
+                <!-- Quiz content will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Download Modal -->
+    <div id="pdf-modal"
+        class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
+        <div class="relative mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">ダウンロードするPDFの種類を選択</h3>
+                <div class="mt-4 px-7 py-3 space-y-3">
+                    <button id="download-list-btn" class="btn btn-primary w-full justify-start">1. 完全な単語のリスト</button>
+                    <button id="download-en-quiz-btn" class="btn btn-primary w-full justify-start">2.
+                        英語の単語を解答する問題</button>
+                    <button id="download-ja-quiz-btn" class="btn btn-primary w-full justify-start">3.
+                        単語の日本語訳を解答する問題</button>
+                    <button id="download-mixed-quiz-btn" class="btn btn-primary w-full justify-start">4.
+                        英語と日本語が混在した問題</button>
+                    <button id="download-sentence-quiz-btn" class="btn btn-primary w-full justify-start">5.
+                        例文の穴埋め問題</button>
+                    <button id="download-sentence-mixed-quiz-btn" class="btn btn-primary w-full justify-start">6.
+                        例文の混合問題 (穴埋め/和訳)</button>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="close-modal-btn" class="btn btn-secondary w-full">キャンセル</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- App State ---
+        const chapterData = [
+  {
+    "id": 2043,
+    "answer": "omit",
+    "explanation": "[他] ～を省く",
+    "en": "omit",
+    "ja": "[他] ～を省く",
+    "target_word": "omit"
+  },
+  {
+    "id": 2044,
+    "answer": "discard",
+    "explanation": "[他] （不要品）を捨てる",
+    "en": "discard a cigarette butt on the street",
+    "ja": "路上にタバコの吸い殻を捨てる",
+    "target_word": "discard"
+  },
+  {
+    "id": 2045,
+    "answer": "curb",
+    "explanation": "[他] ①～を抑制する　[名] ②縁石",
+    "en": "curb the spread of the disease",
+    "ja": "病気の蔓延を抑制する",
+    "target_word": "curb"
+  },
+  {
+    "id": 2046,
+    "answer": "restrain",
+    "explanation": "[他] ～を抑制する",
+    "en": "restrain my anger with difficulty",
+    "ja": "やっとのことで怒りを抑える",
+    "target_word": "restrain"
+  },
+  {
+    "id": 2047,
+    "answer": "inhibit",
+    "explanation": "[他] ～を抑制する",
+    "en": "inhibit the growth of cancerous tumors",
+    "ja": "ガン性腫瘍の成長を抑える",
+    "target_word": "inhibit"
+  },
+  {
+    "id": 2048,
+    "answer": "hamper",
+    "explanation": "[他] （しばしば受身形で）を妨げる，邪魔をする",
+    "en": "Our search was hampered by fog.",
+    "ja": "私たちの捜索は霧によって妨げられた．",
+    "target_word": "hampered"
+  },
+  {
+    "id": 2049,
+    "answer": "lure",
+    "explanation": "[他] ①～を誘い込む　[名] ②魅力，誘惑",
+    "en": "lure a deer into a trap",
+    "ja": "シカを罠に誘い込む",
+    "target_word": "lure"
+  },
+  {
+    "id": 2050,
+    "answer": "reassure",
+    "explanation": "[他] ～を安心させる",
+    "en": "reassure an anxious patient",
+    "ja": "不安な患者を安心させる",
+    "target_word": "reassure"
+  },
+  {
+    "id": 2051,
+    "answer": "dictate",
+    "explanation": "[他] ①～を書き取らせる　②～を命令する，規定する",
+    "en": "dictate a memo to my secretary",
+    "ja": "秘書にメモを書き取らせる",
+    "target_word": "dictate"
+  },
+  {
+    "id": 2052,
+    "answer": "provoke",
+    "explanation": "[他] ①（非難など）を引き起こす　②（意図的に）～を怒らせる",
+    "en": "provoke storms of protest",
+    "ja": "抗議の嵐を招く",
+    "target_word": "provoke"
+  },
+  {
+    "id": 2053,
+    "answer": "refine",
+    "explanation": "[他] ～を洗練させる",
+    "en": "refine my writing skills",
+    "ja": "書く技術を洗練させる",
+    "target_word": "refine"
+  },
+  {
+    "id": 2054,
+    "answer": "enlighten",
+    "explanation": "[他] ～を啓蒙する",
+    "en": "enlighten the ignorant",
+    "ja": "無知な人々を啓蒙する",
+    "target_word": "enlighten"
+  },
+  {
+    "id": 2055,
+    "answer": "unleash",
+    "explanation": "[他] （怒りなど）を爆発させる，～の束縛を解く",
+    "en": "unleash my anger on her",
+    "ja": "彼女に怒りをぶつける",
+    "target_word": "unleash"
+  },
+  {
+    "id": 2056,
+    "answer": "prolong",
+    "explanation": "[他] （時間・期間・感情など）を長引かせる",
+    "en": "prolong my stay until tomorrow",
+    "ja": "明日まで滞在を延長する",
+    "target_word": "prolong"
+  },
+  {
+    "id": 2057,
+    "answer": "mitigate",
+    "explanation": "[他] （苦痛・影響・罰など）～を緩和する",
+    "en": "mitigate the heat island effect",
+    "ja": "ヒートアイランド現象を緩和する",
+    "target_word": "mitigate"
+  },
+  {
+    "id": 2058,
+    "answer": "grind",
+    "explanation": "[他] （穀物，肉など）を挽く",
+    "en": "grind corn into flour",
+    "ja": "トウモロコシを挽いて粉にする",
+    "target_word": "grind"
+  },
+  {
+    "id": 2059,
+    "answer": "withstand",
+    "explanation": "[他] ～に耐える",
+    "en": "a building that can withstand major earthquakes",
+    "ja": "大地震に耐えられる建物",
+    "target_word": "withstand"
+  },
+  {
+    "id": 2060,
+    "answer": "exert",
+    "explanation": "[他] （力，影響力など）を働かせる",
+    "en": "exert strong leadership",
+    "ja": "強いリーダーシップを発揮する",
+    "target_word": "exert"
+  },
+  {
+    "id": 2061,
+    "answer": "summon",
+    "explanation": "[他] ①～を呼ぶ，召喚する，喚問する　②（勇気など）を奮い立たせる",
+    "en": "The ambassador was immediately summoned home.",
+    "ja": "その大使は即座に本国に召喚された．",
+    "target_word": "summoned"
+  },
+  {
+    "id": 2061,
+    "answer": "summon",
+    "explanation": "[他] ①～を呼ぶ，召喚する，喚問する　②（勇気など）を奮い立たせる",
+    "en": "summon (up) all my strength",
+    "ja": "全力を出す",
+    "target_word": "summon"
+  },
+  {
+    "id": 2062,
+    "answer": "thrust",
+    "explanation": "[他] ①～を強く押しつける　②（刃物で）～を突き刺す",
+    "en": "thrust piles of banknotes into the bag",
+    "ja": "かばんに札束を詰め込む",
+    "target_word": "thrust"
+  },
+  {
+    "id": 2062,
+    "answer": "thrust",
+    "explanation": "[他] ①～を強く押しつける　②（刃物で）～を突き刺す",
+    "en": "thrust a fork into the piece of beef",
+    "ja": "牛肉にフォークを突き刺す",
+    "target_word": "thrust"
+  },
+  {
+    "id": 2063,
+    "answer": "pierce",
+    "explanation": "[他] ～を突き刺す，～を突き通す",
+    "en": "have my ears pierced",
+    "ja": "耳に穴を開けてもらう",
+    "target_word": "pierced"
+  },
+  {
+    "id": 2064,
+    "answer": "harness",
+    "explanation": "[他] （自然の力など）を利用する",
+    "en": "harness the forces of nature",
+    "ja": "自然の諸力を利用する",
+    "target_word": "harness"
+  },
+  {
+    "id": 2065,
+    "answer": "excavate",
+    "explanation": "[他] ～を発掘する",
+    "en": "excavate an ancient town",
+    "ja": "古代の町を発掘する",
+    "target_word": "excavate"
+  },
+  {
+    "id": 2066,
+    "answer": "evade",
+    "explanation": "[他] ～を逃れる",
+    "en": "evade taxes",
+    "ja": "税金を逃れる",
+    "target_word": "evade"
+  },
+  {
+    "id": 2067,
+    "answer": "embody",
+    "explanation": "[他] ～を具体化する",
+    "en": "embody American ideals",
+    "ja": "アメリカの理想を具現化する",
+    "target_word": "embody"
+  },
+  {
+    "id": 2068,
+    "answer": "assimilate",
+    "explanation": "[他] ①（食物，考えなど）を吸収する　②（言語，民族など）を同化する",
+    "en": "assimilate new ideas",
+    "ja": "新しい考えを吸収する",
+    "target_word": "assimilate"
+  },
+  {
+    "id": 2068,
+    "answer": "assimilate",
+    "explanation": "[他] ①（食物，考えなど）を吸収する　②（言語，民族など）を同化する",
+    "en": "be fully assimilated into society",
+    "ja": "社会にすっかり溶け込む",
+    "target_word": "assimilated"
+  },
+  {
+    "id": 2069,
+    "answer": "discern",
+    "explanation": "[他] ～を見分ける",
+    "en": "discern the slight difference",
+    "ja": "そのささいな違いを見分ける",
+    "target_word": "discern"
+  },
+  {
+    "id": 2070,
+    "answer": "scrutinize",
+    "explanation": "[他] ～を詳細に調べる，精査する",
+    "en": "scrutinize the document",
+    "ja": "その書類を精査する",
+    "target_word": "scrutinize"
+  },
+  {
+    "id": 2071,
+    "answer": "streamline",
+    "explanation": "[他] （作業・組織など）～を合理化する",
+    "en": "streamline the production process",
+    "ja": "製造過程を合理化する",
+    "target_word": "streamline"
+  },
+  {
+    "id": 2072,
+    "answer": "mentor",
+    "explanation": "[他] ①～を指導する　[名] ②（会社，大学などでの）指導者",
+    "en": "mentor",
+    "ja": "[他] ①～を指導する　[名] ②（会社，大学などでの）指導者",
+    "target_word": "mentor"
+  },
+  {
+    "id": 2073,
+    "answer": "contemplate",
+    "explanation": "[他] ～を熟考する",
+    "en": "contemplate marrying her",
+    "ja": "彼女との結婚をじっくり考える",
+    "target_word": "contemplate"
+  },
+  {
+    "id": 2074,
+    "answer": "conjecture",
+    "explanation": "[他] ～を推測する",
+    "en": "conjecture he will get promoted",
+    "ja": "彼は出世すると推測する",
+    "target_word": "conjecture"
+  },
+  {
+    "id": 2075,
+    "answer": "presume",
+    "explanation": "[他] ①（人が主語）～と推定する　②（計画などが主語）～を前提とする",
+    "en": "presume that he was drunk",
+    "ja": "彼は酒に酔っていたと推定する",
+    "target_word": "presume"
+  },
+  {
+    "id": 2075,
+    "answer": "presume",
+    "explanation": "[他] ①（人が主語）～と推定する　②（計画などが主語）～を前提とする",
+    "en": "This course presumes some knowledge of Latin.",
+    "ja": "この授業はある程度のラテン語の知識を前提とします．",
+    "target_word": "presumes"
+  },
+  {
+    "id": 2076,
+    "answer": "gauge",
+    "explanation": "[他] ～を（慎重に）判断する，評価する",
+    "en": "gauge others by your own standards",
+    "ja": "自分自身の尺度で他者を評価する",
+    "target_word": "gauge"
+  },
+  {
+    "id": 2077,
+    "answer": "verify",
+    "explanation": "[他] （事実かどうか）を確かめる，検証する",
+    "en": "verify the test results",
+    "ja": "実験結果を検証する",
+    "target_word": "verify"
+  },
+  {
+    "id": 2078,
+    "answer": "pledge",
+    "explanation": "[他] ～を誓う",
+    "en": "The prime minister pledged to curb inflation.",
+    "ja": "首相はインフレを抑制することを誓った．",
+    "target_word": "pledged"
+  },
+  {
+    "id": 2079,
+    "answer": "dismay",
+    "explanation": "[他] ①～を狼狽させる　[名] ②狼狽",
+    "en": "to my dismay",
+    "ja": "私が狼狽したことに",
+    "target_word": "dismay"
+  },
+  {
+    "id": 2080,
+    "answer": "lament",
+    "explanation": "[他] ～を深く悲しむ，嘆く",
+    "en": "lament the death of the leader",
+    "ja": "指導者の死を深く悲しむ",
+    "target_word": "lament"
+  },
+  {
+    "id": 2081,
+    "answer": "perplex",
+    "explanation": "[他] ～を困惑させる",
+    "en": "perplex",
+    "ja": "[他] ～を困惑させる",
+    "target_word": "perplex"
+  },
+  {
+    "id": 2082,
+    "answer": "disgust",
+    "explanation": "[他] ①～に嫌悪を抱かせる　[名] ②嫌悪",
+    "en": "disgust",
+    "ja": "[他] ①～に嫌悪を抱かせる　[名] ②嫌悪",
+    "target_word": "disgust"
+  },
+  {
+    "id": 2083,
+    "answer": "evoke",
+    "explanation": "[他] ～を呼び起こす",
+    "en": "evoke memories of my childhood",
+    "ja": "子どものころの記憶を呼び起こす",
+    "target_word": "evoke"
+  },
+  {
+    "id": 2084,
+    "answer": "harbor",
+    "explanation": "[他] ①（悪意・疑いなど）を心に抱く　②（菌など）を住まわせる",
+    "en": "harbor deep resentment against him",
+    "ja": "彼に深い憤りを抱く",
+    "target_word": "harbor"
+  },
+  {
+    "id": 2084,
+    "answer": "harbor",
+    "explanation": "[他] ①（悪意・疑いなど）を心に抱く　②（菌など）を住まわせる",
+    "en": "Dirty towels can harbor dangerous germs.",
+    "ja": "汚れたタオルは危険なばい菌の住処になりうる（ばい菌を住まわせる）．",
+    "target_word": "harbor"
+  }
+];
+
+        let activeSentenceElement = null;
+        let selectedSentences = new Set();
+
+        // --- DOM Elements ---
+        const sentenceList = document.getElementById('sentence-list');
+        const toggleAnswerBtn = document.getElementById('toggle-answer-btn');
+        const playSoundBtn = document.getElementById('play-sound-btn');
+        const recordBtn = document.getElementById('record-btn');
+        const toggleExplanationBtn = document.getElementById('toggle-explanation-btn');
+        const startQuizBtn = document.getElementById('start-quiz-btn');
+        const messageModal = document.getElementById('message-modal');
+        const messageContent = document.getElementById('message-content');
+        const quizModal = document.getElementById('quiz-modal');
+        const closeQuizBtn = document.getElementById('close-quiz-btn');
+        const quizContent = document.getElementById('quiz-content');
+        const selectAllCheckbox = document.getElementById('select-all-checkbox');
+        const pdfModal = document.getElementById('pdf-modal');
+        const openPdfModalBtn = document.getElementById('open-pdf-modal-btn');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+
+        // --- Voice Synthesis Setup ---
+        let synthesisVoice = null;
+        function setSynthesisVoice() {
+            const voices = speechSynthesis.getVoices();
+            synthesisVoice = voices.find(v => v.lang === 'en-US' && (v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Natural'))) || voices.find(v => v.lang.startsWith('en'));
+        }
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = setSynthesisVoice;
+        }
+        setSynthesisVoice();
+
+        // --- Core Functions ---
+        function findAnswerFormInSentence(enSentence, answer) {
+            const cleanAnswer = answer.toLowerCase().replace(/[.,!?]$/, '');
+            const words = enSentence.split(/\s+/);
+            for (let word of words) {
+                const cleanWord = word.toLowerCase().replace(/[.,!?]$/, '');
+                if (cleanWord === cleanAnswer) return word.replace(/[.,!?]$/, '');
+            }
+            return answer;
+        }
+
+        function formatEnglishSentence(enSentence, answer) {
+            const blank = '__________';
+            const actualWord = findAnswerFormInSentence(enSentence, answer);
+            const regex = new RegExp(`\\b${actualWord}\\b`, 'i');
+
+            if (regex.test(enSentence)) {
+                return enSentence.replace(regex, `<span class="answer-span">${actualWord}</span><span class="underline-span">${blank}</span>`);
+            }
+            return enSentence;
+        }
+
+        function renderChapter() {
+            sentenceList.innerHTML = '';
+            chapterData.forEach(item => {
+                const sentenceDiv = document.createElement('div');
+                sentenceDiv.className = 'sentence-item p-4 border border-gray-200 rounded-lg bg-white transition-shadow duration-300 hover:shadow-md';
+                sentenceDiv.dataset.id = item.id;
+                sentenceDiv.dataset.fullSentence = item.en;
+
+                const englishSentenceHtml = formatEnglishSentence(item);
+
+                sentenceDiv.innerHTML = `
+        <div class="flex items-start space-x-4">
+            <input type="checkbox" class="sentence-checkbox mt-1 h-5 w-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" data-id="${item.id}">
+            <span class="text-sm font-bold text-gray-400 w-8">${item.id}</span>
+            <div class="flex-1 cursor-pointer">
+                <p class="mb-2 text-gray-700">${item.ja}</p>
+                <p class="font-english">${englishSentenceHtml}</p>
+                <div class="explanation mt-4 p-4 bg-blue-50 border-l-4 border-blue-400 text-gray-700 rounded-r-lg">
+                ${item.explanation}
+                </div>
+            </div>
+        </div>
+        `;
+                sentenceList.appendChild(sentenceDiv);
+            });
+
+            document.querySelectorAll('.sentence-item .flex-1').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const sentenceWrapper = e.currentTarget.closest('.sentence-item');
+                    if (activeSentenceElement) {
+                        activeSentenceElement.classList.remove('ring-2', 'ring-blue-400', 'shadow-xl');
+                    }
+                    activeSentenceElement = sentenceWrapper;
+                    activeSentenceElement.classList.add('ring-2', 'ring-blue-400', 'shadow-xl');
+                });
+            });
+
+            document.querySelectorAll('.sentence-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (e.target.checked) selectedSentences.add(e.target.dataset.id);
+                    else selectedSentences.delete(e.target.dataset.id);
+                });
+            });
+
+            if (sentenceList.firstChild) sentenceList.firstChild.querySelector('.flex-1').click();
+        }
+
+        function showMessage(htmlContent, duration = null) {
+            messageContent.innerHTML = htmlContent;
+            messageModal.classList.remove('hidden');
+            if (duration) setTimeout(() => messageModal.classList.add('hidden'), duration);
+        }
+
+        function playSound() {
+            if (!activeSentenceElement) return;
+            speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(activeSentenceElement.dataset.fullSentence);
+            if (synthesisVoice) utterance.voice = synthesisVoice;
+            utterance.lang = 'en-US';
+            speechSynthesis.speak(utterance);
+        }
+
+        function handleRecording() {
+            if (!activeSentenceElement) return;
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                showMessage('<p>お使いのブラウザは音声認識に対応していません。</p>', 3000);
+                return;
+            }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.onstart = () => showMessage('<p class="text-2xl">マイクに向かって話してください...</p><div class="animate-pulse text-red-500 text-4xl mt-4">●</div>');
+            recognition.onresult = (event) => evaluatePronunciation(event.results[0][0].transcript);
+            recognition.onerror = () => showMessage('<p>認識エラーが発生しました。</p>', 2000);
+            recognition.start();
+        }
+
+        function evaluatePronunciation(transcript) {
+            const original = activeSentenceElement.dataset.fullSentence.toLowerCase().replace(/[^\w\s]/g, '');
+            const user = transcript.toLowerCase().replace(/[^\w\s]/g, '');
+            const score = Math.min(100, Math.floor((user.split(' ').filter(w => original.includes(w)).length / original.split(' ').length) * 100) + 15);
+
+            showMessage(`
+        <h3 class="text-2xl font-bold mb-4">評価結果</h3>
+        <p class="text-7xl font-bold text-blue-600 mb-4">${score}<span class="text-2xl">点</span></p>
+        <p class="text-gray-600 mb-2"><strong>認識結果:</strong> ${transcript}</p>
+        <button onclick="document.getElementById('message-modal').classList.add('hidden')" class="mt-6 bg-blue-500 text-white py-2 px-6 rounded-lg">閉じる</button>
+    `);
+        }
+
+        function startQuiz() {
+            const questions = [...chapterData].sort(() => 0.5 - Math.random()).slice(0, 10);
+            let currentIdx = 0, score = 0;
+
+            function nextQuestion() {
+                if (currentIdx >= questions.length) {
+                    quizContent.innerHTML = `<h3 class="text-3xl font-bold mb-4">結果: ${score}/${questions.length}</h3><p class="text-6xl text-purple-600 font-bold">${Math.round(score / questions.length * 100)}点</p>`;
+                    return;
+                }
+                const q = questions[currentIdx];
+                const options = [q.answer, ...chapterData.map(d => d.answer).filter(a => a !== q.answer).sort(() => 0.5 - Math.random()).slice(0, 3)].sort();
+
+                quizContent.innerHTML = `
+            <p class="mb-2">問題 ${currentIdx + 1}/10</p>
+            <p class="text-lg font-bold mb-4">${q.ja}</p>
+            <div class="grid grid-cols-1 gap-3">
+                ${options.map(opt => `<button class="quiz-opt p-3 border rounded-lg hover:bg-blue-50 font-english">${opt}</button>`).join('')}
+            </div>
+        `;
+                document.querySelectorAll('.quiz-opt').forEach(btn => {
+                    btn.onclick = () => {
+                        if (btn.innerText === q.answer) { btn.classList.add('bg-green-200'); score++; }
+                        else btn.classList.add('bg-red-200');
+                        setTimeout(() => { currentIdx++; nextQuestion(); }, 1000);
+                    };
+                });
+            }
+            quizModal.classList.remove('hidden');
+            nextQuestion();
+        }
+
+        // --- PDF Print Logic ---
+        function openPrintWindow(content, title) {
+            const win = window.open('', '_blank');
+            win.document.write(`<html><head><title>LEAP +Alpha Verb 2 (2043-2084)</title><style>body{font-family:sans-serif;padding:40px} .list{column-count:2} li{margin-bottom:10px} .ans{margin-top:50px;border-top:1px solid #000;padding-top:20px}</style></head><body><h1>LEAP +Alpha</h1>${content}</body></html>`);
+            win.document.close();
+            setTimeout(() => { win.focus(); win.print(); }, 500);
+        }
+
+        function getSelected() {
+            return Array.from(selectedSentences).map(id => chapterData.find(d => d.id == id)).sort((a, b) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }));
+        }
+
+        function formatEnglishSentence(item) {
+            const enSentence = item.en;
+            const answer = item.answer;
+            const blank = '__________';
+
+            if (!enSentence) return '<span class="text-gray-400">（例文なし）</span>';
+
+            let actualWord = item.target_word;
+            if (!actualWord) {
+                actualWord = findAnswerFormInSentence(enSentence, answer);
+            }
+
+            // Try Regex first (word boundary)
+            try {
+                const regex = new RegExp(`\\b${actualWord}\\b`, 'i');
+                if (regex.test(enSentence)) {
+                    return enSentence.replace(regex, match => `<span class="answer-span">${match}</span><span class="underline-span">${blank}</span>`);
+                }
+            } catch (e) { console.error(e); }
+
+            // Fallback: simple replace
+            if (enSentence.toLowerCase().includes(actualWord.toLowerCase())) {
+                const index = enSentence.toLowerCase().indexOf(actualWord.toLowerCase());
+                if (index !== -1) {
+                    const originalWord = enSentence.substring(index, index + actualWord.length);
+                    return enSentence.substring(0, index) +
+                        `<span class="answer-span">${originalWord}</span><span class="underline-span">${blank}</span>` +
+                        enSentence.substring(index + actualWord.length);
+                }
+            }
+            return enSentence;
+        }
+
+        // --- Listeners ---
+        toggleAnswerBtn.onclick = () => activeSentenceElement?.classList.toggle('show-answer');
+        toggleExplanationBtn.onclick = () => {
+            const exp = activeSentenceElement?.querySelector('.explanation');
+            if (exp) exp.style.display = exp.style.display === 'block' ? 'none' : 'block';
+        };
+        playSoundBtn.onclick = playSound;
+        recordBtn.onclick = handleRecording;
+        startQuizBtn.onclick = startQuiz;
+        closeQuizBtn.onclick = () => quizModal.classList.add('hidden');
+        openPdfModalBtn.onclick = () => selectedSentences.size ? pdfModal.classList.remove('hidden') : showMessage('問題を選択してください', 2000);
+        closeModalBtn.onclick = () => pdfModal.classList.add('hidden');
+        selectAllCheckbox.onchange = (e) => {
+            document.querySelectorAll('.sentence-checkbox').forEach(cb => {
+                cb.checked = e.target.checked;
+                if (e.target.checked) selectedSentences.add(cb.dataset.id);
+                else selectedSentences.delete(cb.dataset.id);
+            });
+        };
+
+        document.getElementById('download-list-btn').onclick = () => {
+            const items = getSelected();
+            const html = `<div class="list"><ul>${items.map(i => `<li><strong>${i.answer}</strong>: ${i.explanation}</li>`).join('')}</ul></div>`;
+            openPrintWindow(html, '重要語句リスト');
+        };
+
+        document.getElementById('download-sentence-quiz-btn').onclick = () => {
+            const items = getSelected();
+            const html = `<ol>${items.map(i => {
+                if (!i.en) return `<li>（例文なし: ${i.answer}）</li>`;
+                let actualWord = i.target_word || findAnswerFormInSentence(i.en, i.answer);
+                let sent = i.en;
+                try {
+                    const regex = new RegExp(`\\b${actualWord}\\b`, 'i');
+                    if (regex.test(sent)) sent = sent.replace(regex, '__________');
+                    else sent = sent.replace(actualWord, '__________');
+                } catch (e) { sent = sent.replace(actualWord, '__________'); }
+
+                return `<li>${sent}<br><small>${i.ja}</small></li>`;
+            }).join('')}</ol><div class="ans"><h3>解答</h3><p>${items.map(i => i.answer).join(', ')}</p></div>`;
+            openPrintWindow(html, '例文穴埋めテスト');
+        };
+
+
+        document.getElementById('download-en-quiz-btn').onclick = () => {
+            const items = getSelected();
+            const html = `<div class="list"><ul>${items.map(i => `<li>[日本語]: ${i.ja}<br>[英語]: __________</li>`).join('')}</ul></div><div class="ans"><h3>解答</h3><p>${items.map(i => i.answer).join(', ')}</p></div>`;
+            openPrintWindow(html, '英単語テスト');
+        };
+
+        document.getElementById('download-ja-quiz-btn').onclick = () => {
+            const items = getSelected();
+            const html = `<div class="list"><ul>${items.map(i => `<li>[英語]: ${i.answer}<br>[意味]: __________</li>`).join('')}</ul></div><div class="ans"><h3>解答</h3><p>${items.map(i => i.explanation.split('\n')[0]).join('<br>')}</p></div>`;
+            openPrintWindow(html, '意味テスト');
+        };
+
+        document.getElementById('download-mixed-quiz-btn').onclick = () => {
+            const items = getSelected();
+            const html = `<div class="list"><ul>${items.map(i => {
+                return Math.random() > 0.5
+                    ? `<li>[日本語]: ${i.ja}<br>[英語]: __________</li>`
+                    : `<li>[英語]: ${i.answer}<br>[意味]: __________</li>`;
+            }).join('')}</ul></div><div class="ans"><h3>解答</h3><p>${items.map(i => i.answer + ' / ' + i.explanation).join('<br>')}</p></div>`;
+            openPrintWindow(html, '英単語・意味混合テスト');
+        };
+
+        document.getElementById('download-sentence-mixed-quiz-btn').onclick = () => {
+            const items = getSelected();
+            const html = `<ol>${items.map(i => {
+                if (!i.en) {
+                    return `<li>[英語]: ${i.answer}<br>[意味]: __________</li>`;
+                }
+                if (Math.random() > 0.5) {
+                    let actualWord = i.target_word || findAnswerFormInSentence(i.en, i.answer);
+                    let sent = i.en;
+                    try {
+                        const regex = new RegExp(`\\b${actualWord}\\b`, 'i');
+                        if (regex.test(sent)) sent = sent.replace(regex, '__________');
+                        else sent = sent.replace(actualWord, '__________');
+                    } catch (e) { sent = sent.replace(actualWord, '__________'); }
+                    return `<li>${sent}<br><small>${i.ja}</small></li>`;
+                } else {
+                    return `<li>日本文を英語にしなさい: ${i.ja}<br>_____________________________________________</li>`;
+                }
+            }).join('')}</ol><div class="ans"><h3>解答</h3><p>${items.map(i => i.en || i.answer).join('<br>')}</p></div>`;
+            openPrintWindow(html, '例文混合テスト');
+        };
+
+        // 初期表示
+        document.addEventListener('DOMContentLoaded', renderChapter);
+    </script>
+</body>
+
+</html>
